@@ -241,7 +241,7 @@ local function apply_config(config)
         -- set the content of the output buffer
         vim.api.nvim_buf_set_lines(output_buffer, 0, -1, false, {})
 
-        vim.api.nvim_open_win(output_buffer, false, { vertical = config.vsplit })
+        vim.api.nvim_open_win(output_buffer, false, { split = config.split })
 
         -- make the output buffer automatically quit
         -- if it's the last window

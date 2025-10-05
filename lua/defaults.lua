@@ -49,7 +49,7 @@ local hl_group_map = {
 
 local default_config = {
     isabelle_path = 'isabelle',
-    vsplit = false,
+    split = 'below',
     sh_path = 'sh', -- only relevant for Windows
     unicode_symbols_output = false,
     unicode_symbols_edits = false,

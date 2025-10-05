@@ -82,7 +82,7 @@ Refer to [`nvim-lspconfig`](https://github.com/neovim/nvim-lspconfig)'s instruct
 If you want to open a vertical split instead of a horizontal split when you open an Isabelle file, you can specify so in the setup:
 ```lua
 require('isabelle-lsp').setup({
-    vsplit = true,
+    split = 'right',
 })
 ```
 
