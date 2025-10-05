@@ -241,16 +241,7 @@ local function apply_config(config)
         -- set the content of the output buffer
         vim.api.nvim_buf_set_lines(output_buffer, 0, -1, false, {})
 
-        -- TODO replace with nvim_open_win()
-        -- place the output window
-        if config.vsplit then
-          vim.api.nvim_command('vsplit')
-          vim.api.nvim_command('wincmd l')
-        else
-          vim.api.nvim_command('split')
-          vim.api.nvim_command('wincmd j')
-        end
-        vim.api.nvim_set_current_buf(output_buffer)
+        vim.api.nvim_open_win(output_buffer, false, { vertical = config.vsplit })
 
         -- make the output buffer automatically quit
         -- if it's the last window
@@ -262,13 +253,6 @@ local function apply_config(config)
             end
           end,
         })
-
-        -- put focus back on main buffer
-        if config.vsplit then
-          vim.api.nvim_command('wincmd h')
-        else
-          vim.api.nvim_command('wincmd k')
-        end
 
         local min_width = get_min_width(output_buffer)
         set_output_margin(client, min_width)
@@ -297,14 +281,7 @@ local function apply_config(config)
 
               vim.api.nvim_buf_set_lines(new_buf, 0, -1, false, {})
 
-              -- place the state window
-              vim.api.nvim_command('vsplit')
-              vim.api.nvim_command('wincmd l')
-
-              vim.api.nvim_set_current_buf(new_buf)
-
-              -- put focus back on main buffer
-              vim.api.nvim_command('wincmd h')
+              vim.api.nvim_open_win(new_buf, false, { vertical = false })
 
               local min_width = get_min_width(new_buf)
               set_state_margin(client2, id, min_width)
