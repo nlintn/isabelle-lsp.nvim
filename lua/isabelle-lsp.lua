@@ -1,6 +1,5 @@
 -- vi: foldmethod=marker
 
-local configs = require('lspconfig.configs')
 local util = require('lspconfig.util')
 
 local defaults = require('defaults')
@@ -219,19 +218,10 @@ local function apply_config(config)
     local output_buffer
     local state_buffers = {}
 
-    configs.isabelle = {
-        default_config = {
+    vim.lsp.config('isabelle', {
             cmd = cmd,
             filetypes = { 'isabelle' },
-            root_dir = function(fname)
-                -- TODO we should be searching for a ROOT file here
-                -- and only use this as a fallback
-                -- or better yet: prompt the user like isabelle-emacs does
-                --
-                -- :h gets us the path to the current file's directory
-                return vim.fn.fnamemodify(fname, ':h')
-            end,
-            single_file_support = true,
+            root_markers = { 'ROOT', { '.git', '.hg' } },
             on_attach = function(client, bufnr)
                 vim.api.nvim_create_autocmd({ "CursorMoved", "CursorMovedI" }, {
                     buffer = bufnr,
@@ -291,6 +281,70 @@ local function apply_config(config)
                         set_output_margin(client, min_width)
                     end,
                 })
+
+                vim.api.nvim_buf_create_user_command(bufnr, 'LspStateInit',
+                    -- {{{
+                    function()
+                        local clients = vim.lsp.get_clients({ name = 'isabelle' })
+
+                        for _, client2 in ipairs(clients) do
+                            send_request(client2, 'state_init', {}, function(result)
+                                local id = result.state_id
+
+                                local new_buf = vim.api.nvim_create_buf(true, true)
+                                vim.api.nvim_buf_set_name(new_buf, "--STATE-- " .. id)
+                                vim.api.nvim_set_option_value('filetype', 'isabelle_output', { buf = new_buf })
+
+                                vim.api.nvim_buf_set_lines(new_buf, 0, -1, false, {})
+
+                                -- place the state window
+                                vim.api.nvim_command('vsplit')
+                                vim.api.nvim_command('wincmd l')
+
+                                vim.api.nvim_set_current_buf(new_buf)
+
+                                -- put focus back on main buffer
+                                vim.api.nvim_command('wincmd h')
+
+                                local min_width = get_min_width(new_buf)
+                                set_state_margin(client2, id, min_width)
+
+                                -- handle resizes
+                                vim.api.nvim_create_autocmd('WinResized', {
+                                    callback = function(_)
+                                        local min_width2 = get_min_width(new_buf)
+                                        set_state_margin(client2, id, min_width2)
+                                    end,
+                                })
+
+                                state_buffers[id] = new_buf
+                            end)
+                        end
+                    end,
+                    -- }}}
+                    {}
+                )
+                vim.api.nvim_buf_create_user_command(bufnr, 'LspSymbolsRequest',
+                    -- {{{
+                    function()
+                        send_notification_to_all("symbols_request", {})
+                    end,
+                    -- }}}
+                    {}
+                )
+                vim.api.nvim_buf_create_user_command(bufnr, 'LspSymbolsConvert',
+                    function()
+                        local clients = vim.lsp.get_clients({ name = 'isabelle' })
+                        local buf = vim.api.nvim_get_current_buf()
+                        local text = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
+                        local t = table.concat(text, '\n')
+                        for _, client2 in ipairs(clients) do
+                            convert_symbols(client2, buf, t)
+                        end
+                    end,
+                    -- }}}
+                    {}
+                )
             end,
             handlers = {
                 ['PIDE/dynamic_output'] = function(_, params, _, _)
@@ -391,77 +445,7 @@ local function apply_config(config)
                     -- }}}
                 end,
             },
-        },
-        commands = {
-            StateInit = {
-                -- {{{
-                function()
-                    local clients = vim.lsp.get_clients({ name = 'isabelle' })
-
-                    for _, client in ipairs(clients) do
-                        send_request(client, 'state_init', {}, function(result)
-                            local id = result.state_id
-
-                            local new_buf = vim.api.nvim_create_buf(true, true)
-                            vim.api.nvim_buf_set_name(new_buf, "--STATE-- " .. id)
-                            vim.api.nvim_set_option_value('filetype', 'isabelle_output', { buf = new_buf })
-
-                            vim.api.nvim_buf_set_lines(new_buf, 0, -1, false, {})
-
-                            -- place the state window
-                            vim.api.nvim_command('vsplit')
-                            vim.api.nvim_command('wincmd l')
-
-                            vim.api.nvim_set_current_buf(new_buf)
-
-                            -- put focus back on main buffer
-                            vim.api.nvim_command('wincmd h')
-
-                            local min_width = get_min_width(new_buf)
-                            set_state_margin(client, id, min_width)
-
-                            -- handle resizes
-                            vim.api.nvim_create_autocmd('WinResized', {
-                                callback = function(_)
-                                    local min_width2 = get_min_width(new_buf)
-                                    set_state_margin(client, id, min_width2)
-                                end,
-                            })
-
-                            state_buffers[id] = new_buf
-                        end)
-                    end
-                end,
-                -- }}}
-            },
-            SymbolsRequest = {
-                -- {{{
-                function()
-                    send_notification_to_all("symbols_request", {})
-                end,
-                -- }}}
-            },
-            SymbolsConvert = {
-                -- {{{
-                function()
-                    local clients = vim.lsp.get_clients({ name = 'isabelle' })
-                    local buf = vim.api.nvim_get_current_buf()
-                    local text = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
-                    local t = table.concat(text, '\n')
-                    for _, client in ipairs(clients) do
-                        convert_symbols(client, buf, t)
-                    end
-                end,
-                -- }}}
-            }
-
-        },
-        docs = {
-            description = [[
-Isabelle VSCode Language Server
-]],
-        },
-    }
+    })
 end
 
 M.setup = function(user_config)
