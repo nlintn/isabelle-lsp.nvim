@@ -243,6 +243,9 @@ local function apply_config(config)
 
         vim.api.nvim_open_win(output_buffer, false, { split = config.split })
 
+        vim.api.nvim_set_option_value('modifiable', false, { buf = output_buffer })
+        vim.api.nvim_set_option_value('readonly', true, { buf = output_buffer })
+
         -- make the output buffer automatically quit
         -- if it's the last window
         vim.api.nvim_create_autocmd({ "BufEnter" }, {
@@ -294,6 +297,9 @@ local function apply_config(config)
                 end,
               })
 
+              vim.api.nvim_set_option_value('modifiable', false, { buf = new_buf })
+              vim.api.nvim_set_option_value('readonly', true, { buf = new_buf })
+
               state_buffers[id] = new_buf
             end)
           end
@@ -328,6 +334,8 @@ local function apply_config(config)
         -- {{{
         if not output_buffer then return end
 
+        vim.api.nvim_set_option_value('modifiable', true, { buf = output_buffer })
+
         local lines = {}
         -- this regex makes sure that empty lines are still kept
         for s in params.content:gmatch("([^\r\n]*)\n?") do
@@ -355,6 +363,8 @@ local function apply_config(config)
 
           ::continue::
         end
+
+        vim.api.nvim_set_option_value('modifiable', false, { buf = output_buffer })
         -- }}}
       end,
       ['PIDE/decoration'] = function(_, params, _, _)
@@ -392,6 +402,8 @@ local function apply_config(config)
         local id = params.id
         local buf = state_buffers[id]
 
+        vim.api.nvim_set_option_value('modifiable', true, { buf = buf })
+
         local lines = {}
         -- this regex makes sure that empty lines are still kept
         for s in params.content:gmatch("([^\r\n]*)\n?") do
@@ -419,6 +431,8 @@ local function apply_config(config)
 
           ::continue::
         end
+
+        vim.api.nvim_set_option_value('modifiable', false, { buf = buf })
         -- }}}
       end,
     },
