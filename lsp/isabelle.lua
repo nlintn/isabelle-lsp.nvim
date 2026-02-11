@@ -1,6 +1,6 @@
-local utils = require('utils')
+local utils = require('isabelle-lsp.utils')
 
-local config = vim.tbl_deep_extend('force', require('defaults'), vim.g.isabelle_lsp or {})
+local config = vim.tbl_deep_extend('force', require('isabelle-lsp.defaults'), vim.g.isabelle_lsp or {})
 
 local function get_uri_from_fname(fname)
     return vim.uri_from_fname(vim.fs.normalize(fname))
