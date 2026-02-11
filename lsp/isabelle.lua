@@ -123,6 +123,12 @@ local function apply_decoration(bufnr, hl_group, syn_id, content)
     end
 end
 
+local buf_write_nomod = function (buf, lines)
+  vim.bo[buf].modifiable = true
+  vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
+  vim.bo[buf].modifiable = false
+end
+
 local function state_init(client, state_buffers)
     send_request(client, 'state_init', {}, function(result)
         local id = result.state_id
@@ -131,7 +137,7 @@ local function state_init(client, state_buffers)
         vim.api.nvim_buf_set_name(new_buf, '--STATE-- ' .. id)
         vim.api.nvim_set_option_value('filetype', 'isabelle_output', { buf = new_buf })
 
-        vim.api.nvim_buf_set_lines(new_buf, 0, -1, false, {})
+        buf_write_nomod(new_buf, {})
 
         -- place the state window
         vim.api.nvim_open_win(new_buf, false, { split = 'right' })
@@ -171,7 +177,7 @@ return {
             for s in params.content:gmatch('([^\r\n]*)\n?') do
                 table.insert(lines, s)
             end
-            vim.api.nvim_buf_set_lines(output_buffer, 0, -1, false, lines)
+            buf_write_nomod(output_buffer, lines)
 
             -- clear all decorations
             vim.api.nvim_buf_clear_namespace(output_buffer, output_namespace, 0, -1)
@@ -230,7 +236,7 @@ return {
             for s in params.content:gmatch('([^\r\n]*)\n?') do
                 table.insert(lines, s)
             end
-            vim.api.nvim_buf_set_lines(buf, 0, -1, false, lines)
+            buf_write_nomod(buf, lines)
 
             -- clear all decorations
             vim.api.nvim_buf_clear_namespace(buf, output_namespace, 0, -1)
@@ -271,7 +277,7 @@ return {
             vim.api.nvim_set_option_value('filetype', 'isabelle_output', { buf = output_buffer })
 
             -- set the content of the output buffer
-            vim.api.nvim_buf_set_lines(output_buffer, 0, -1, false, {})
+            buf_write_nomod(output_buffer, {})
 
             -- place the output window
             if config.vsplit then
